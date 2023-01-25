@@ -1,5 +1,5 @@
-// Your Name
-// HW1 Vector addition on the CPU
+// Aurod Ounsinegad
+// CUDA HW1-Vector Addition on the CPU
 //nvcc VectorAdditionCPU.cu -o VectorAddition
 #include <sys/time.h>
 #include <stdio.h>
@@ -8,12 +8,18 @@
 #define N 10 
 
 //Global CPU pointers (floats)
-(??? I need 3 points to floats. You should name them so the rest of the code works.) 
+//I need 3 points to floats. You should name them so the rest of the code works.
+float *A_CPU;
+float *B_CPU;
+float *C_CPU;
 
 //Allocate Host (CPU) Memory
 void AllocateMemory()
 {					
-	(??? allocate memoryfor your 3 floats)
+	// Allocate memory for your 3 floats
+	A_CPU = ((float*)malloc(N*sizeof(float)));
+	B_CPU = ((float*)malloc(N*sizeof(float)));
+	C_CPU = ((float*)malloc(N*sizeof(float)));
 }
 
 //Loads vectors that we will add.
@@ -31,13 +37,19 @@ void Innitialize()
 //Cleaning up memory after we are finished.
 void CleanUp()
 {
-	(??? free your memory)
+	free(A_CPU);
+	free(B_CPU);
+	free(C_CPU);
 }
 
 //Adds vectors A and B then stores result in vector C
 void Addition(float *a, float *b, float *c, int n)
 {
-	(??? add the vectors)
+	int i = 0;
+	while (i<N) {
+		c[i] = a[i] + b[i];
+		i +=1;
+	}
 }
 
 int main()
