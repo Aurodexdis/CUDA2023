@@ -20,7 +20,7 @@ void SetUpCudaDevices()
 	BlockSize.y = 1;
 	BlockSize.z = 1;
 	
-	GridSize.x = 50;
+	GridSize.x = N;
 	GridSize.y = 1;
 	GridSize.z = 1;
 }
