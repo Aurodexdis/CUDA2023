@@ -63,20 +63,23 @@ void CleanUp()
 __global__ void AdditionGPU(float *a, float *b, float *c, int n)
 {
 	int i = threadIdx.x + blockDim.x*blockIdx.x;
-	if(i < N)
+	for(; i<n; i+=20)
 	{
-	c[i] = a[i] + b[i];
+		if(i < N)
+		{
+		c[i] = a[i] + b[i];
+		}
 	}
 }
 
-void errorCheck(const char *message)
+void errorCheck(const char *file, int line)
 {
 	cudaError_t  error;
 	error = cudaGetLastError();
 
 	if(error != cudaSuccess)
 	{
-		printf("\n CUDA ERROR: %s = %s\n", message, cudaGetErrorString(error));
+		printf("\n CUDA ERROR = %s, File = %s\n, Line = %d\n", cudaGetErrorString(error), file, line);
 		exit(0);
 	}
 }
