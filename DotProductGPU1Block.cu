@@ -3,7 +3,7 @@
 
 #include <sys/time.h>
 #include <stdio.h>
-#include "./MyCuda.h"
+#include "./ErrorCode.h"
 
 //Length of vectors to be added.
 #define N 1000
@@ -71,14 +71,38 @@ void CleanUp()
 __global__ void DotProductGPU(float *a, float *b, float *c, int n)
 {
 	int id = threadIdx.x;
-	*************************************************
-	???
-	************************************************
+	//*************************************************
+	if(id<n)
+	{
+		c[id] = a[id]*b[id];	
+	}
+	__syncthreads();
+	
+	int nn = n;
+	while(nn>1)
+	{
+		if(nn%2==1)
+		{
+			if(id==0)
+			{
+				c[id] = c[id]+c[nn-1];
+			}
+			nn--;
+		}
+		__syncthreads();
+		if(id<nn/2)
+		{
+			c[id] = c[id]+c[id+nn/2];
+		}
+		nn=nn/2;
+		__syncthreads();
+	}
+	//************************************************
 }
 
 int main()
 {
-	float ???;
+	float dot;
 	timeval start, end;
 	
 	//Set the thread structure that you will be using on the GPU	
@@ -104,7 +128,7 @@ int main()
 	myCudaErrorCheck(__FILE__, __LINE__);
 	
 	//Copy Memory from GPU to CPU	
-	cudaMemcpyAsync(???, &C_GPU[0], sizeof(float), cudaMemcpyDeviceToHost);
+	cudaMemcpyAsync(&dot, &C_GPU[0], sizeof(float), cudaMemcpyDeviceToHost);
 	myCudaErrorCheck(__FILE__, __LINE__);
 
 	//Stopping the timer
