@@ -119,17 +119,17 @@ int main()
 
 	//Copy Memory from CPU to GPU		
 	cudaMemcpyAsync(A_GPU, A_CPU, N*sizeof(float), cudaMemcpyHostToDevice);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaMemcpyAsync(B_GPU, B_CPU, N*sizeof(float), cudaMemcpyHostToDevice);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	//Calling the Kernel (GPU) function.	
 	DotProductGPU<<<GridSize,BlockSize>>>(A_GPU, B_GPU, C_GPU, N);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	//Copy Memory from GPU to CPU	
 	cudaMemcpyAsync(&dot, &C_GPU[0], sizeof(float), cudaMemcpyDeviceToHost);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 
 	//Stopping the timer
 	gettimeofday(&end, NULL);
