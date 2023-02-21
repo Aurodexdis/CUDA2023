@@ -1,8 +1,8 @@
-// nvcc DotProductGPUSharedMemAtomicAddPading2.cu -o temp
+// nvcc DotProductGPUSharedMemAtomicAddPading.cu -o temp
 
 #include <sys/time.h>
 #include <stdio.h>
-#include "./MyCuda.h"
+#include "./ErrorCode.h"
 
 //Length of vectors to be added. Max int value is 2147483647
 #define N 214748
@@ -66,19 +66,19 @@ void AllocateMemory(float vectorSize)
 {					
 	//Allocate Device (GPU) Memory
 	cudaMalloc(&A_GPU,vectorSize*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaMalloc(&B_GPU,vectorSize*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaMalloc(&DotGPU,sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 
 	//Allocate Host (CPU) Memory
 	A_CPU = (float*)malloc(vectorSize*sizeof(float));
 	B_CPU = (float*)malloc(vectorSize*sizeof(float));
 	
 	//Setting the vector to zero so the ectra values will not affect the dot product.
-	memset(???);
-	memset(???);
+	memset(A_CPU, 0.0, vectorSize*sizeof(float));
+	memset(B_CPU, 0.0, vectorSize*sizeof(float));
 }
 
 //Loads values into vectors that we will add.
@@ -98,7 +98,7 @@ void CleanUp()
 {
 	free(A_CPU); free(B_CPU);
 	cudaFree(A_GPU); cudaFree(B_GPU); cudaFree(DotGPU);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 }
 
 //This is the kernel. It is the function that will run on the GPU.
@@ -108,14 +108,33 @@ __global__ void DotProductGPU(float *a, float *b, float *DotGPU, int n)
 	int vectorNumber = threadIdx.x + blockDim.x*blockIdx.x;
 	__shared__ float c_sh[BLOCK_SIZE];
 	
-	***********************************
-	???
-	***********************************
+	//***********************************
+    if(vectorNumber < n)
+    {
+        c_sh[threadNumber] = a[vectorNumber]*b[vectorNumber];
+    }
+    __syncthreads();
+
+    int nnew = blockDim.x;
+    while(nnew > 1) 
+    {       
+        if(threadNumber < nnew/2 && (vectorNumber +nnew/2) < n)
+        {
+            c_sh[threadNumber] += c_sh[threadNumber+nnew/2];
+        }
+        __syncthreads();
+        nnew /= 2;
+        
+    }
+    __syncthreads();
+        
+	//***********************************
 	
 	if(threadNumber == 0) 
 	{
-		???
+		atomicAdd(DotGPU, c_sh[0]);
 	}
+    
 }
 
 float dotProductCPU(float *a, float *b)
@@ -140,7 +159,7 @@ int main()
 		exit(0);
 	}
 	
-	int vectorSize = ???;
+	int vectorSize = N + N%BLOCK_SIZE;
 	
 	//Set the thread structure that you will be using on the GPU	
 	SetUpCudaDevices(vectorSize);
@@ -161,15 +180,15 @@ int main()
 	gettimeofday(&start, NULL);
 	//Copy Memory from CPU to GPU		
 	cudaMemcpyAsync(A_GPU, A_CPU, vectorSize*sizeof(float), cudaMemcpyHostToDevice);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaMemcpyAsync(B_GPU, B_CPU, vectorSize*sizeof(float), cudaMemcpyHostToDevice);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	//Calling the Kernel (GPU) function.	
 	DotProductGPU<<<GridSize,BlockSize>>>(A_GPU, B_GPU, DotGPU, vectorSize);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	//Copy Memory from GPU to CPU	
-	cudaMemcpyAsync(???);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	cudaMemcpyAsync(&dotGPU, DotGPU, sizeof(float), cudaMemcpyDeviceToHost);
+	errorCheck(__FILE__, __LINE__);
 	gettimeofday(&end, NULL);
 	time = (end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec);
 	printf("\nTime for GPU dot product = %.15f milliseconds\n", (time/1000.0));
