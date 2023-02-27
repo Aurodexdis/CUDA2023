@@ -99,7 +99,7 @@ __device__ float getEscapeValue(float x, float y, float a, float b)
 		//x = y/(sqrt(x*x+y*y)); //This one is alright
 		//x = log(x)/log(y); //This one is slightly less cool than the next one
 		x = log(x*x)/log(y*y); //This one makes the very cool, fractal go brr
-		y = (2.0 * tempX * y) + b;
+		y = (lgamma(x*x) * pow(tempX,3) * y) + b;
 		mag = sqrt(x*x + y*y);
 		count++;
 	}
@@ -124,8 +124,8 @@ __global__ void colorPixels(float *pixels, float xMin, float yMin, float dx, flo
 	if(0.99999 < escapeValue)
 	{
 		pixels[id]   = 1.0; //Setting the red
-		pixels[id+1] = 0.0; //Setting the green
-		pixels[id+2] = 0.0; //Setting the blue
+		pixels[id+1] = 0.75; //Setting the green
+		pixels[id+2] = 1.5; //Setting the blue
 	}
 	else
 	{
@@ -149,9 +149,9 @@ void adjustSeed()
 {
 	float temp;
 	
-	temp = ((float)rand()/(float)RAND_MAX)*2.0 - 1.0; // Get random number between -1 at 1.
+	temp = ((float)rand()/(float)RAND_MAX)*exp(sin(RealSeed)) - log(asinh(DeltaSeed)); // Get random number between -1 at 1.
 	RealSeed += DeltaSeed*temp;
-	temp = ((float)rand()/(float)RAND_MAX)*2.0 - 1.0; // Get random number between -1 at 1.
+	temp = ((float)rand()/(float)RAND_MAX)*lgamma(cos(ImaginarySeed))+sinh(DeltaSeed); // Get random number between -1 at 1.
 	ImaginarySeed += DeltaSeed*temp;
 }
 
