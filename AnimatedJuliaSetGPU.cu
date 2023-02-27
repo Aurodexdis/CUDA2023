@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
-#include "./MyCuda.h"
+#include "./ErrorCode.h"
 
 #define MAXMAG 10.0
 #define MAXITERATIONS 2000
@@ -94,7 +94,11 @@ __device__ float getEscapeValue(float x, float y, float a, float b)
 		
 		//We will be changing the x but we need its old value to find y.	
 		tempX = x; 
-		x = x*x - y*y + a;
+		//x = log(sin(x*x))-cbrt(cos(y*y))+a; //This makes the cool
+		//x = sin(x*x)-cos(y*y)+a; // This is of the cool
+		//x = y/(sqrt(x*x+y*y)); //This one is alright
+		//x = log(x)/log(y); //This one is slightly less cool than the next one
+		x = log(x*x)/log(y*y); //This one makes the very cool, fractal go brr
 		y = (2.0 * tempX * y) + b;
 		mag = sqrt(x*x + y*y);
 		count++;
@@ -134,11 +138,11 @@ __global__ void colorPixels(float *pixels, float xMin, float yMin, float dx, flo
 void makeFractal()
 {
 	colorPixels<<<GridSize, BlockSize>>>(PixelsGPU, XMin, YMin, StepSizeX, StepSizeY, RealSeed, ImaginarySeed);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 
 	//Copying the pixels that we just colored back to the CPU.
 	cudaMemcpyAsync(PixelsCPU, PixelsGPU, WindowWidth*WindowHeight*3*sizeof(float), cudaMemcpyDeviceToHost);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 }
 
 void adjustSeed()
@@ -163,7 +167,7 @@ void setup()
 	//We need the 3 because each pixel has a red, green, and blue value.
 	PixelsCPU = (float *)malloc(WindowWidth*WindowHeight*3*sizeof(float));
 	cudaMalloc(&PixelsGPU,WindowWidth*WindowHeight*3*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	StepSizeX = (XMax - XMin)/((float)WindowWidth);
 	StepSizeY = (YMax - YMin)/((float)WindowHeight);
@@ -196,7 +200,7 @@ int main(int argc, char** argv)
    	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_SINGLE);
    	glutInitWindowSize(WindowWidth, WindowHeight);
-	Window = glutCreateWindow("Fractals man, fractals");
+	Window = glutCreateWindow("Fractals go brr");
 	glutKeyboardFunc(KeyPressed);
    	glutDisplayFunc(display);
 	//glutReshapeFunc(reshape);
