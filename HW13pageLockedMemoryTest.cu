@@ -1,4 +1,4 @@
-// nvcc pageLockedMemoryTest2.cu -o temp
+// nvcc HW13pageLockedMemoryTest.cu -o temp
 
 #include <sys/time.h>
 #include <stdio.h>
