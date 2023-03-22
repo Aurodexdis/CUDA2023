@@ -43,26 +43,26 @@ void allocateMemory()
 	//*****
 	PageLockedNumbersOnCPU = (float*)malloc(SIZE*sizeof(float));
 	//*****
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 }
 
 //Cleaning up memory after we are finished.
 void cleanUp()
 {
 	cudaFree(NumbersOnGPU); 
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	//*****
 	free(PageLockedNumbersOnCPU);
 	//*****
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	free(PageableNumbersOnCPU); 
 	
 	cudaEventDestroy(StartEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventDestroy(StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 }
 
 void copyPageableMemoryUp()
@@ -70,7 +70,7 @@ void copyPageableMemoryUp()
 	for(int i = 0; i < NUMBER_OF_COPIES; i++)
 	{
 		cudaMemcpy(NumbersOnGPU, PageableNumbersOnCPU, SIZE*sizeof(float), cudaMemcpyHostToDevice);
-		myCudaErrorCheck(__FILE__, __LINE__);
+		errorCheck(__FILE__, __LINE__);
 	}
 }
 
@@ -79,7 +79,7 @@ void copyPageableMemoryDown()
 	for(int i = 0; i < NUMBER_OF_COPIES; i++)
 	{
 		cudaMemcpy(PageableNumbersOnCPU, NumbersOnGPU, SIZE*sizeof(float), cudaMemcpyDeviceToHost);
-		myCudaErrorCheck(__FILE__, __LINE__);
+		errorCheck(__FILE__, __LINE__);
 	}
 }
 
@@ -89,8 +89,7 @@ void copyPageLockedMemoryUp()
 	{
 		//*****
 		cudaMemcpy(NumbersOnGPU, PageLockedNumbersOnCPU, SIZE*sizeof(float), cudaMemcpyHostToDevice);
-		//*****
-		myCudaErrorCheck(__FILE__, __LINE__);
+		errorCheck(__FILE__, __LINE__);
 	}
 }
 
@@ -100,8 +99,7 @@ void copyPageLockedMemoryDown()
 	{
 		//*****
 		cudaMemcpy(PageLockedNumbersOnCPU, NumbersOnGPU, SIZE*sizeof(float), cudaMemcpyDeviceToHost);
-		//*****
-		myCudaErrorCheck(__FILE__, __LINE__);
+		errorCheck(__FILE__, __LINE__);
 	}
 }
 
@@ -114,47 +112,47 @@ int main()
 	allocateMemory();
 	
 	cudaEventRecord(StartEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	copyPageableMemoryUp();
 	cudaEventRecord(StopEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventSynchronize(StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventElapsedTime(&timeEvent, StartEvent, StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	printf("\n Time on GPU using pageable memory up = %3.1f milliseconds", timeEvent);
 	
 	cudaEventRecord(StartEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	copyPageLockedMemoryUp();
 	cudaEventRecord(StopEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventSynchronize(StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventElapsedTime(&timeEvent, StartEvent, StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	printf("\n Time on GPU using page locked memory up = %3.1f milliseconds", timeEvent);
 	
 	cudaEventRecord(StartEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	copyPageableMemoryDown();
 	cudaEventRecord(StopEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventSynchronize(StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventElapsedTime(&timeEvent, StartEvent, StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	printf("\n Time on GPU using pageable memory down = %3.1f milliseconds", timeEvent);
 	
 	cudaEventRecord(StartEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	copyPageLockedMemoryDown();
 	cudaEventRecord(StopEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventSynchronize(StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventElapsedTime(&timeEvent, StartEvent, StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	printf("\n Time on GPU using page locked memory down = %3.1f milliseconds", timeEvent);
 	
 	printf("\n");
