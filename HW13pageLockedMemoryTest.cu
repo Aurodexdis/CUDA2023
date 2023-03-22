@@ -41,7 +41,8 @@ void allocateMemory()
 	
 	//Allocate page locked Host (CPU) Memory
 	//*****
-	PageLockedNumbersOnCPU = (float*)malloc(SIZE*sizeof(float));
+	cudaHostAlloc((void**)&PageLockedNumbersOnCPU, SIZE*sizeof(float),cudaHostAllocDefault);
+	//PageLockedNumbersOnCPU = (float*)malloc(SIZE*sizeof(float));
 	//*****
 	errorCheck(__FILE__, __LINE__);
 }
@@ -53,7 +54,7 @@ void cleanUp()
 	errorCheck(__FILE__, __LINE__);
 	
 	//*****
-	free(PageLockedNumbersOnCPU);
+	cudaFreeHost(PageLockedNumbersOnCPU);
 	//*****
 	errorCheck(__FILE__, __LINE__);
 	
@@ -89,6 +90,7 @@ void copyPageLockedMemoryUp()
 	{
 		//*****
 		cudaMemcpy(NumbersOnGPU, PageLockedNumbersOnCPU, SIZE*sizeof(float), cudaMemcpyHostToDevice);
+		//*****
 		errorCheck(__FILE__, __LINE__);
 	}
 }
@@ -99,6 +101,7 @@ void copyPageLockedMemoryDown()
 	{
 		//*****
 		cudaMemcpy(PageLockedNumbersOnCPU, NumbersOnGPU, SIZE*sizeof(float), cudaMemcpyDeviceToHost);
+		//*****
 		errorCheck(__FILE__, __LINE__);
 	}
 }
