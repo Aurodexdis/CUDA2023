@@ -2,7 +2,7 @@
 
 #include <sys/time.h>
 #include <stdio.h>
-#include "./MyCuda.h"
+#include "./ErrorCode.h"
 
 #define SIZE 2000000 
 #define NUMBER_OF_COPIES 1000
@@ -24,9 +24,9 @@ cudaEvent_t StartEvent, StopEvent;
 void setUpCudaDevices()
 {
 	cudaEventCreate(&StartEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventCreate(&StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 }
 
 //Sets a side memory on the GPU and CPU for our use.
@@ -34,7 +34,7 @@ void allocateMemory()
 {					
 	//Allocate Device (GPU) Memory
 	cudaMalloc(&NumbersOnGPU, SIZE*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 
 	//Allocate pageable Host (CPU) Memory
 	PageableNumbersOnCPU = (float*)malloc(SIZE*sizeof(float));
