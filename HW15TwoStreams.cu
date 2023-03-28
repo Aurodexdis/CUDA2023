@@ -2,7 +2,7 @@
 
 #include <sys/time.h>
 #include <stdio.h>
-#include "./MyCuda.h"
+#include "./ErrorCode.h"
 
 #define DATA_CHUNKS (1024*1024) 
 #define ENTIRE_DATA_SET (20*DATA_CHUNKS)
@@ -29,18 +29,18 @@ cudaStream_t Stream0, Stream1;
 void setUpCudaDevices()
 {
 	cudaEventCreate(&StartEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventCreate(&StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	cudaDeviceProp prop;
 	int whichDevice;
 	
 	cudaGetDevice(&whichDevice);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	cudaGetDeviceProperties(&prop, whichDevice);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	if(prop.deviceOverlap != 1)
 	{
@@ -50,9 +50,9 @@ void setUpCudaDevices()
 	}
 	
 	cudaStreamCreate(&Stream0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaStreamCreate(&Stream1);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	BlockSize.x = BLOCK_SIZE;
 	BlockSize.y = 1;
@@ -74,25 +74,25 @@ void allocateMemory()
 {	
 	//Allocate Device (GPU) Memory
 	cudaMalloc(&A0_GPU,DATA_CHUNKS*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaMalloc(&B0_GPU,DATA_CHUNKS*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaMalloc(&C0_GPU,DATA_CHUNKS*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaMalloc(&A1_GPU,DATA_CHUNKS*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaMalloc(&B1_GPU,DATA_CHUNKS*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaMalloc(&C1_GPU,DATA_CHUNKS*sizeof(float));
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	//Allocate page locked Host (CPU) Memory
 	cudaHostAlloc(&A_CPU, ENTIRE_DATA_SET*sizeof(float), cudaHostAllocDefault);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaHostAlloc(&B_CPU, ENTIRE_DATA_SET*sizeof(float), cudaHostAllocDefault);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaHostAlloc(&C_CPU, ENTIRE_DATA_SET*sizeof(float), cudaHostAllocDefault);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 }
 
 void loadData()
@@ -111,34 +111,34 @@ void loadData()
 void cleanUp()
 {
 	cudaFree(A0_GPU); 
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaFree(B0_GPU); 
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaFree(C0_GPU); 
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaFree(A1_GPU); 
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaFree(B1_GPU); 
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaFree(C1_GPU); 
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	cudaFreeHost(A_CPU);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaFreeHost(B_CPU);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaFreeHost(C_CPU);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	cudaEventDestroy(StartEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventDestroy(StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	cudaStreamDestroy(Stream0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaStreamDestroy(Stream1);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 }
 
 __global__ void trigAdditionGPU(float *a, float *b, float *c, int n)
@@ -160,13 +160,35 @@ int main()
 	loadData();
 	
 	cudaEventRecord(StartEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	
 	for(int i = 0; i < ENTIRE_DATA_SET; i += DATA_CHUNKS*2)
 	{
-		******************************************
-		???
-		******************************************
+	//************************************************************************************************
+		//copy the locked memory to the device - Stream 0
+		cudaMemcpyAsync(A0_GPU, A_CPU+i, DATA_CHUNKS*sizeof(float), cudaMemcpyHostToDevice, Stream0);
+		errorCheck(__FILE__, __LINE__);
+		cudaMemcpyAsync(B0_GPU, B_CPU+i, DATA_CHUNKS*sizeof(float), cudaMemcpyHostToDevice, Stream0);
+		errorCheck(__FILE__, __LINE__);
+		trigAdditionGPU<<<GridSize,BlockSize,0,Stream0>>>(A0_GPU, B0_GPU, C0_GPU, DATA_CHUNKS);
+		errorCheck(__FILE__, __LINE__);
+		
+		//copy the data from device to locked memory - Stream 0
+		cudaMemcpyAsync(C_CPU+i, C0_GPU, DATA_CHUNKS*sizeof(float), cudaMemcpyDeviceToHost, Stream0);
+		errorCheck(__FILE__, __LINE__);
+		
+		//copy the locked memory to the device - Stream 1
+		cudaMemcpyAsync(A1_GPU, A_CPU+i+DATA_CHUNKS, DATA_CHUNKS*sizeof(float), cudaMemcpyHostToDevice, Stream1);
+		errorCheck(__FILE__, __LINE__);
+		cudaMemcpyAsync(B1_GPU, B_CPU+i+DATA_CHUNKS, DATA_CHUNKS*sizeof(float), cudaMemcpyHostToDevice, Stream1);
+		errorCheck(__FILE__, __LINE__);
+		trigAdditionGPU<<<GridSize,BlockSize,0,Stream1>>>(A1_GPU, B1_GPU, C1_GPU, DATA_CHUNKS);
+		errorCheck(__FILE__, __LINE__);
+		
+		//copy the data from device to locked memory - Stream 1
+		cudaMemcpyAsync(C_CPU+i+DATA_CHUNKS, C1_GPU, DATA_CHUNKS*sizeof(float), cudaMemcpyDeviceToHost, Stream1);
+		errorCheck(__FILE__, __LINE__);
+	//************************************************************************************************
 	}
 	
 	// Make the CPU wait until the Streams have finishd before it continues.
@@ -174,12 +196,12 @@ int main()
 	cudaStreamSynchronize(Stream1);
 	
 	cudaEventRecord(StopEvent, 0);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	// Make the CPU wiat until this event finishes so the timing will be correct.
 	cudaEventSynchronize(StopEvent); 
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	cudaEventElapsedTime(&timeEvent, StartEvent, StopEvent);
-	myCudaErrorCheck(__FILE__, __LINE__);
+	errorCheck(__FILE__, __LINE__);
 	printf("\n Time on GPU = %3.1f milliseconds", timeEvent);
 	
 	
