@@ -19,17 +19,17 @@
 #define MASS 10.0
 #define DIAMETER 1.0
 
-#define SPRING_STRENGTH 50.0
+#define SPRING_STRENGTH 500.0
 #define SPRING_REDUCTION 0.1
 
 #define DAMP 0.0
 
-#define DRAW 100
+#define DRAW 10
 
 #define LENGTH_OF_BOX 6.0
 #define MAX_VELOCITY 5.0
 
-#define NUMBSPHERES 10 //There needs to be at least 2 balls for this simulation to work
+#define NUMBSPHERES 2 //There needs to be at least 2 balls for this simulation to work
 
 const float XMax = (LENGTH_OF_BOX/2.0);
 const float YMax = (LENGTH_OF_BOX/2.0);
@@ -45,9 +45,10 @@ struct SphereStruct //Declare the structure of the spheres
 	float px,py,pz; // 3 dimensions of the spheres position
 	float vx,vy,vz; // 3 dimensions of the spheres velocity
 	float fx,fy,fz; // 3 dimensions of the spheres force
+	float r,g,b;
 	float mass;
-}
-struct SphereStuct *Sphere;
+};
+struct SphereStruct *Sphere;
 
 void initialize() //initalize the velocities and forces for the spheres at 0
 {
@@ -80,10 +81,14 @@ void set_initail_conditions()
 		Sphere[i].vy=2.0*MAX_VELOCITY*rand()/RAND_MAX - MAX_VELOCITY;
 		Sphere[i].vz=2.0*MAX_VELOCITY*rand()/RAND_MAX - MAX_VELOCITY;
 
-		Sphere[i].mass=1.0;
+		Sphere[i].mass=MASS;
+		
+		Sphere[i].r=1.0*rand()/RAND_MAX;
+		Sphere[i].g=0.5*rand()/RAND_MAX;
+		Sphere[i].b=1.0*rand()/RAND_MAX;
 	
 		yeahBuddy = 0;
-		while(yeahBuddy == 0)
+		while(yeahBuddy == 0 && i!=0)
 		{
 			dx = Sphere[i].px-Sphere[i-1].px;
 			dy = Sphere[i].py-Sphere[i-1].py;
@@ -139,11 +144,11 @@ void draw_picture()
 
 	Drawwirebox();
 
-	for(i=0;i<NUMBSPHERES;i++)
+	for(int i=0;i<NUMBSPHERES;i++)
 	{
-		glColor3d(1.0,0.5,1.0);
+		glColor3d(Sphere[i].r,Sphere[i].g,Sphere[i].b);
 		glPushMatrix();
-		glTranslatef(Sphere[i].px, Sphere[i].py, Sphere[i].pz1);
+		glTranslatef(Sphere[i].px, Sphere[i].py, Sphere[i].pz);
 		glutSolidSphere(radius,20,20);
 		glPopMatrix();
 	}
@@ -195,55 +200,48 @@ void keep_in_box()
 }
 
 void get_forces()
-{
-	int j=1;
-	int k=1;	
+{	
 	float dx,dy,dz,r,r2,dvx,dvy,dvz,forceMag,inout;
 
 	for(int i=0;i<NUMBSPHERES;i++)
 	{
-		int k=j;
-		while(k<=NUMBSPHERES)
+		for(int j=i+1;j<NUMBSPHERES;j++)
 		{
-			if(i!=j)
+			dx = Sphere[j].px - Sphere[i].px;
+			dy = Sphere[j].py - Sphere[i].py;
+			dz = Sphere[j].pz - Sphere[i].pz;
+
+			r2 = dx*dx + dy*dy + dz*dz;
+			r = sqrt(r2);
+
+			forceMag = Sphere[j].mass*Sphere[i].mass*GRAVITY/r2;
+			printf("%f\n",forceMag);
+
+			if (r < DIAMETER)
 			{
-				dx = Sphere[k].px - Sphere[i].px;
-				dy = Sphere[k].py - Sphere[i].py;
-				dz = Sphere[k].pz - Sphere[i].pz;
+				dvx = Sphere[j].vx - Sphere[i].vx;
+				dvy = Sphere[j].vy - Sphere[i].vy;
+				dvz = Sphere[j].vz - Sphere[i].vz;
 
-				r2 = dx*dx + dy*dy + dz*dz;
-				r = sqrt(r2);
+				inout = dx*dvx + dy*dvy + dz*dvz;
 
-				forceMag = Sphere[i+1].mass*Sphere[i].mass*GRAVITY/r2
-
-				if (r < DIAMETER)
+				if(inout <= 0.0)
 				{
-					dvx = Sphere[k].vx - Sphere[i].vx;
-					dvy = Sphere[k].vy - Sphere[i].vy;
-					dvz = Sphere[k].vz - Sphere[i].vz;
-
-					inout = dx*dvx + dy*dvy + dz*dvz;
-
-					if(inout <= 0.0)
-					{
-						forceMag +=  SPRING_STRENGTH*(r - DIAMETER);
-					}
-					else
-					{
-						forceMag +=  SPRING_REDUCTION*SPRING_STRENGTH*(r - DIAMETER);
-					}
+					forceMag +=  SPRING_STRENGTH*(r - DIAMETER);
 				}
-
-				Sphere[i].fx += forceMag*dx/r;
-				Sphere[i].fy += forceMag*dy/r;
-				Sphere[i].fz += forceMag*dz/r;
-				Sphere[k].fx += -forceMag*dx/r;
-				Sphere[k].fy += -forceMag*dy/r;
-				Sphere[k].fz += -forceMag*dz/r;
+				else
+				{
+					forceMag +=  SPRING_REDUCTION*SPRING_STRENGTH*(r - DIAMETER);
+				}
 			}
-			k++
+
+			Sphere[i].fx += forceMag*dx/r;
+			Sphere[i].fy += forceMag*dy/r;
+			Sphere[i].fz += forceMag*dz/r;
+			Sphere[j].fx += -forceMag*dx/r;
+			Sphere[j].fy += -forceMag*dy/r;
+			Sphere[j].fz += -forceMag*dz/r;
 		}
-		j++
 	}
 }
 
@@ -278,6 +276,7 @@ void nbody()
 	float  time = 0.0;
 
 	set_initail_conditions();
+	initialize();
 
 	draw_picture();
 
@@ -324,6 +323,11 @@ void reshape(int w, int h)
 	glMatrixMode(GL_MODELVIEW);
 }
 
+void clean_up()
+{
+	free(Sphere);
+}
+
 int main(int argc, char** argv)
 {
 	glutInit(&argc,argv);
@@ -355,5 +359,6 @@ int main(int argc, char** argv)
 	glutDisplayFunc(Display);
 	glutReshapeFunc(reshape);
 	glutMainLoop();
+	clean_up();
 	return 0;
 }
