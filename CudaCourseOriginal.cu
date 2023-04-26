@@ -33,7 +33,7 @@ __global__ void updateBodies(Body *p, float dt, int n, int jump)
 
 __global__ void bodyForce(Body *p, float dt, int n, int jump) 
 {
-  int id = threadIdx.x + blockIdx.x * blockDim.x
+  int id = threadIdx.x + blockIdx.x * blockDim.x;
   
   //change for loop to allow for parallelization of the calculation of BodyForces utilizing jump and id
   
@@ -121,10 +121,10 @@ int main(const int argc, const char** argv)
    */
    
   cudaMemPrefetchAsync(buf, bytes, deviceId); 
-  \\Prefetches memory to the specified destination
-  \\In this case it prefetches it to the CUDA Device we are using
+  //Prefetches memory to the specified destination
+  //In this case it prefetches it to the CUDA Device we are using
   
-  cudaDeviceSynchronize();
+  cudaDeviceSynchronize(); //wait for the computing device to finish
   int threadNum = 256;
   int blockNum = numberOfSMs;
   int jump = threadNum * blockNum;
@@ -136,7 +136,7 @@ int main(const int argc, const char** argv)
    */
    
   cudaDeviceSynchronize();
-  updateBodies<<<blockNum,threadNum>>>(p,dt,nBodies,jump); \\updates the positions of the bodies using the velocities
+  updateBodies<<<blockNum,threadNum>>>(p,dt,nBodies,jump); //updates the positions of the bodies using the velocities
   cudaDeviceSynchronize();
   
     //for (int i = 0 ; i < nBodies; i++) { // integrate position
